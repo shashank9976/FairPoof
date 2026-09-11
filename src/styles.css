@@ -1204,6 +1204,31 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--cyan); outline-
   .privacy-map { grid-template-columns: 1fr; }
 }
 
+/* Give the playable surface room to breathe on desktop. The hand is the
+   primary interaction, so it should never compete with the side panels for
+   width. */
+@media (min-width: 1101px) {
+  .arena {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "hand hand"
+      "played opponent";
+    align-items: center;
+    column-gap: 28px;
+    row-gap: 26px;
+  }
+
+  .arena > .player-zone:first-child { grid-area: hand; }
+  .arena > .versus { grid-area: played; }
+  .arena > .player-zone.opponent { grid-area: opponent; align-self: center; }
+  .arena .hand { grid-template-columns: repeat(5, minmax(72px, 1fr)); gap: 10px; }
+  .arena .card { min-height: 166px; }
+  .arena .versus { display: grid; grid-template-columns: 1fr; justify-items: center; }
+  .arena .vs-line { width: 100%; max-width: 180px; }
+  .arena .player-zone.opponent { width: 100%; }
+  .arena .player-zone.opponent .commitment { min-height: 92px; display: grid; place-items: center; padding: 20px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.025); font: 700 .76rem var(--font-mono); color: #c8d4e7; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
