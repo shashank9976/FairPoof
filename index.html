@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="src/styles.css?v=20260909-structural">
+</head>
+<body>
+<main class="app">
+  <nav class="topbar" aria-label="FairProof navigation">
+    <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M10 2 17 6v8l-7 4-7-4V6l7-4Z"/><path d="m6.5 10 2.25 2.25L13.75 7.5"/></svg></span>FairProof</a>
+    <div class="nav-links"><a class="active" href="index.html">Dashboard</a><a href="demo.html">Demo Game</a><a href="sdk.html">SDK</a><a href="docs.html">Docs</a></div>
+  </nav>
+  <section class="hero dashboard-hero">
+    <div><p class="eyebrow">Privacy rule verification</p><h1>FairProof</h1><p class="lede">A developer toolkit for proving competitive game actions without exposing hidden cards, private strategy, or invasive player data.</p></div>
+    <div class="status-panel"><span class="status-dot"></span><span>System ready</span></div>
+  </section>
+  <section class="dashboard-grid" aria-label="FairProof dashboard">
+    <a class="launch-card launch-primary" href="demo.html"><span class="card-kicker">Live environment</span><div class="launch-hero-copy"><strong>Card Battle Demo</strong><p>Run private hand commitments, generate valid and invalid proofs, and resolve a multi-round match.</p></div><div class="launch-metrics"><span><b>05</b> cards</span><span><b>05</b> rounds</span><span><b>100%</b> local</span></div><span class="launch-action">Open workspace <svg class="lucide-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+    <a class="launch-card launch-sdk" href="sdk.html"><span class="card-kicker">Developer surface</span><div class="card-symbol">&lt;/&gt;</div><strong>SDK Reference</strong><p>Explore the API, proof lifecycle, and browser integration example.</p><span class="launch-action">View primitives <svg class="lucide-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+    <a class="launch-card launch-docs" href="docs.html"><div><span class="card-kicker">Protocol design</span><strong>Privacy &amp; Midnight</strong></div><p>What is public, what stays private, and how the flow maps to selective disclosure.</p><div class="launch-docs-footer"><span class="launch-meta">Compact preparation notes</span><svg class="lucide-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div></a>
+  </section>
+  <section class="dashboard-lower">
+    <div class="dashboard-section"><div class="section-heading"><span class="eyebrow">Build status</span><span class="live-label">LIVE</span></div><div class="status-grid"><div><strong>Commitment</strong><span>SHA-256 hand binding</span><b>Ready</b></div><div><strong>Verification</strong><span>Private rule check</span><b>Ready</b></div><div><strong>Receipts</strong><span>Public proof output</span><b>Ready</b></div></div></div>
+    <div class="dashboard-section next-step"><span class="eyebrow">Recommended path</span><h2>Start with the demo</h2><p>Play a round, reject a forged move, then inspect the resulting receipt in the SDK flow.</p><a class="text-link" href="demo.html">Open workspace <svg class="lucide-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "fairproof-sdk-demo",
+  "version": "1.0.0",
+  "description": "FairProof SDK - Privacy-preserving rule verification SDK prototype",
+  "main": "src/sdk/fairproof.js",
+  "scripts": {
+    "dev": "npx -y serve -l 3000 .",
+    "start": "npx -y serve -l 3000 .",
+    "test": "node tests/sdk.test.js"
+  },
+  "keywords": [
+    "fairproof",
+    "zkp",
+    "privacy",
+    "sdk"
+  ],
+  "author": "",
+  "license": "MIT"
+}

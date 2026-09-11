@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FairProof SDK Example</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 28px;
+        background: #f7f8f4;
+        color: #18201d;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      pre {
+        min-height: 280px;
+        overflow: auto;
+        padding: 18px;
+        border: 1px solid #d8dfda;
+        border-radius: 8px;
+        background: #15211d;
+        color: #e8f3ed;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>FairProof Browser SDK Example</h1>
+    <p>This page creates a match, verifies one valid move, then verifies one forged move.</p>
+    <pre id="output">Running example...</pre>
+
+    <script src="../src/sdk/fairproof.js"></script>
+    <script>
+      async function runExample() {
+        const deck = FairProof.shuffle(FairProof.createDeck());
+        const playerHand = deck.slice(0, 5);
+        const opponentHand = deck.slice(5, 10);
+        const match = await FairProof.createMatch({ playerHand, opponentHand });
+
+        const validProof = await FairProof.verifyMove({
+          ruleset: match.ruleset,
+          privateHand: match.player.privateHand,
+          salt: match.player.salt,
+          commitment: match.player.commitment,
+          move: { card: playerHand[0] }
+        });
+
+        const forgedCard = deck.slice(10).find((card) => !playerHand.some((owned) => owned.id === card.id));
+        const invalidProof = await FairProof.verifyMove({
+          ruleset: match.ruleset,
+          privateHand: match.player.privateHand,
+          salt: match.player.salt,
+          commitment: match.player.commitment,
+          move: { card: forgedCard }
+        });
+
+        const receipt = await FairProof.createReceipt({
+          proof: validProof,
+          round: 1,
+          matchId: match.id
+        });
+
+        document.querySelector("#output").textContent = JSON.stringify({
+          publicState: match.publicState,
+          validProof,
+          invalidProof,
+          receipt
+        }, null, 2);
+      }
+
+      runExample();
+    </script>
+  </body>
+</html>

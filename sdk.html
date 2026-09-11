@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>FairProof | SDK</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"><link rel="stylesheet" href="src/styles.css"></head>
+<body><main class="app"><nav class="topbar" aria-label="FairProof navigation"><a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M10 2 17 6v8l-7 4-7-4V6l7-4Z"/><path d="m6.5 10 2.25 2.25L13.75 7.5"/></svg></span>FairProof</a><div class="nav-links"><a href="index.html">Dashboard</a><a href="demo.html">Demo Game</a><a class="active" href="sdk.html">SDK</a><a href="docs.html">Docs</a></div></nav>
+<section class="page-heading"><div><p class="eyebrow">Developer surface</p><h1>FairProof SDK</h1><p class="lede">Small primitives for binding hidden state, checking actions, and publishing minimal proof receipts.</p></div><a class="primary-button button-link" href="examples/browser-sdk-example.html">Open browser example <svg class="lucide-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></section>
+<section class="reference-grid"><article class="reference-panel"><span class="card-kicker">Core API</span><h2>Verification lifecycle</h2><div class="api-list"><div><code>createMatch()</code><p>Creates player commitments and shared public match state.</p></div><div><code>commitHand()</code><p>Binds a private hand to a salt-derived SHA-256 commitment.</p></div><div><code>verifyMove()</code><p>Checks ownership and commitment integrity without revealing the full hand.</p></div><div><code>createReceipt()</code><p>Returns a compact public record for the verified action.</p></div></div></article><article class="reference-panel"><span class="card-kicker">Integration shape</span><h2>Minimal usage</h2><div class="code-block tall"><pre><code>const match = await FairProof.createMatch({
+  playerHand,
+  opponentHand
+});
+
+const proof = await FairProof.verifyMove({
+  ruleset: "card-battle-v1",
+  privateHand: playerHand,
+  salt: match.player.salt,
+  commitment: match.player.commitment,
+  move: { card: playerHand[0] }
+});</code></pre></div><a class="text-link" href="docs/sdk.md">Read full SDK notes <svg class="lucide-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></article></section>
+</main></body></html>

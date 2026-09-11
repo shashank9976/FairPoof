@@ -1,0 +1,7 @@
+{
+  "compactCompiler": "0.10.1",
+  "contractName": "FairProofVerifier",
+  "source": "FairProofVerifier.compact",
+  "network": "testnet",
+  "status": "interface-only"
+}
