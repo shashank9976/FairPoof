@@ -26,6 +26,16 @@ function commitmentFor(hand, salt) {
 }
 
 export default async function handler(req, res) {
+  if (req.method === "GET") {
+    return json(res, 200, {
+      service: "FairProof verification API",
+      status: "ok",
+      ruleset: RULESET,
+      method: "POST",
+      endpoint: "/api/verify"
+    });
+  }
+
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return json(res, 405, { error: "method_not_allowed" });
