@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "npx -y serve -l 3000 .",
     "start": "npx -y serve -l 3000 .",
-    "test": "node tests/sdk.test.js"
+    "test": "node tests/sdk.test.js",
+    "test:api": "node tests/api.test.js"
   },
   "keywords": [
     "fairproof",

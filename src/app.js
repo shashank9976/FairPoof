@@ -31,6 +31,16 @@ const downloadReceiptBtn = receiptActionsEl.querySelector("button:last-child");
 
 let state = {};
 
+async function verifyMoveWithApi(payload) {
+  const response = await fetch("/api/verify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) throw new Error(`Verification API returned ${response.status}`);
+  return response.json();
+}
+
 function suitSymbol(suit) {
   switch (suit) {
     case "Hearts": return "♥";
@@ -314,7 +324,7 @@ verifyBtn.addEventListener("click", async () => {
   
   await new Promise(r => setTimeout(r, 350));
   
-  const proof = await FairProof.verifyMove({
+  const proof = await verifyMoveWithApi({
     ruleset: state.ruleset,
     privateHand: state.playerHand,
     salt: state.salt,
@@ -339,7 +349,7 @@ invalidProofBtn.addEventListener("click", async () => {
   await new Promise(r => setTimeout(r, 350));
 
   const forgedCard = FairProof.createDeck().find((card) => !state.playerHand.some((ownedCard) => ownedCard.id === card.id));
-  const proof = await FairProof.verifyMove({
+  const proof = await verifyMoveWithApi({
     ruleset: state.ruleset,
     privateHand: state.playerHand,
     salt: state.salt,
