@@ -1,3 +1,4 @@
+// FairProof Battle Cockpit Controller
 const handEl = document.querySelector("#hand");
 const proofReceiptEl = document.querySelector("#proofReceipt");
 const matchStatusEl = document.querySelector("#matchStatus");
@@ -14,15 +15,23 @@ const invalidProofBtn = document.querySelector("#invalidProofBtn");
 const revealBtn = document.querySelector("#revealBtn");
 const newMatchBtn = document.querySelector("#newMatchBtn");
 
-// Create sleek action bar for proof receipt
+// Step elements
+const stepCommit = document.querySelector("#step-commit");
+const stepSelect = document.querySelector("#step-select");
+const stepVerify = document.querySelector("#step-verify");
+const stepReceipt = document.querySelector("#step-receipt");
+
+// Inject interactive Action Bar for Proof Receipts
 const receiptActionsEl = document.createElement("div");
 receiptActionsEl.className = "receipt-actions";
 receiptActionsEl.innerHTML = `
   <button class="secondary-button" type="button" disabled>
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy JSON
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+    <span>Copy JSON</span>
   </button>
   <button class="secondary-button" type="button" disabled>
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+    <span>Download</span>
   </button>
 `;
 proofReceiptEl.after(receiptActionsEl);
@@ -31,14 +40,40 @@ const downloadReceiptBtn = receiptActionsEl.querySelector("button:last-child");
 
 let state = {};
 
-async function verifyMoveWithApi(payload) {
-  const response = await fetch("/api/verify", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
+function updateFlowStep(activeStep) {
+  const steps = [
+    { el: stepCommit, id: "commit" },
+    { el: stepSelect, id: "select" },
+    { el: stepVerify, id: "verify" },
+    { el: stepReceipt, id: "receipt" }
+  ];
+
+  let passed = true;
+  steps.forEach(({ el, id }) => {
+    if (!el) return;
+    el.classList.remove("active", "completed");
+    if (id === activeStep) {
+      el.classList.add("active");
+      passed = false;
+    } else if (passed) {
+      el.classList.add("completed");
+    }
   });
-  if (!response.ok) throw new Error(`Verification API returned ${response.status}`);
-  return response.json();
+}
+
+async function verifyMoveWithApi(payload) {
+  try {
+    const response = await fetch("/api/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) throw new Error(`API returned ${response.status}`);
+    return await response.json();
+  } catch {
+    // Seamless fallback to pure client-side FairProof SDK verification
+    return await FairProof.verifyMove(payload);
+  }
 }
 
 function suitSymbol(suit) {
@@ -73,6 +108,7 @@ function renderCard(card, selected) {
   button.className = `card ${selected ? "selected" : ""} ${used ? "used" : ""} ${red ? "suit-red" : "suit-black"}`;
   button.type = "button";
   button.disabled = used;
+  button.setAttribute("aria-label", `${card.rank} of ${card.suit}, power ${card.power}`);
   
   button.innerHTML = `
     <div class="card-header">
@@ -93,24 +129,24 @@ function renderCard(card, selected) {
     
     playedCardEl.className = `played-card selected-card ${red ? "suit-red" : "suit-black"}`;
     playedCardEl.innerHTML = `
-      <div class="card-header">
+      <div class="card-header" style="width: 100%;">
         <span class="card-rank">${card.rank}</span>
         <span class="card-suit-mini">${symbol}</span>
       </div>
-      <div class="card-center-suit">${symbol}</div>
-      <div class="card-footer">
+      <div class="card-center-suit" style="font-size: 2.2rem;">${symbol}</div>
+      <div class="card-footer" style="width: 100%;">
         <span class="power-badge">⚡ ${card.power}</span>
       </div>
     `;
     
     proofReceiptEl.className = "receipt empty-receipt";
     proofReceiptEl.innerHTML = `
-      <div class="receipt-placeholder">
-        <span class="pulse-icon">⚡</span>
-        <span>Selected <strong>${cardLabel(card)}</strong>. Generate a ZK proof to verify.</span>
+      <div style="color: var(--text-secondary);">
+        <strong style="color: #fff;">${cardLabel(card)}</strong> selected.<br>Click <strong style="color: var(--primary-light);">Generate Proof</strong> to create ZK verification.
       </div>
     `;
-    matchStatusEl.textContent = "Card selected";
+    matchStatusEl.textContent = `${cardLabel(card)} selected`;
+    updateFlowStep("verify");
     renderHand();
   });
   return button;
@@ -132,18 +168,25 @@ function renderProof(proof) {
       <span class="receipt-time">${new Date(proof.checkedAt).toLocaleTimeString()}</span>
     </div>
     <div class="receipt-grid">
-      <div><span>Ruleset</span><code>${proof.ruleset}</code></div>
+      <div><span>Ruleset ID</span><code>${proof.ruleset}</code></div>
       <div><span>Played Card</span><code>${proof.publicMove.id}</code></div>
-      <div><span>Commitment</span><code>${shortHash(proof.commitment)}</code></div>
-      <div><span>Proof Hash</span><code>${shortHash(proof.proofHash)}</code></div>
+      <div><span>Commitment Root</span><code title="${proof.commitment}">${shortHash(proof.commitment)}</code></div>
+      <div><span>Proof Hash</span><code title="${proof.proofHash}">${shortHash(proof.proofHash)}</code></div>
     </div>
   `;
   copyReceiptBtn.disabled = false;
   downloadReceiptBtn.disabled = false;
+  updateFlowStep("receipt");
 }
 
 function receiptPayload() {
-  return { matchId: state.matchId, round: state.round, ruleset: state.ruleset, proof: state.latestProof };
+  return { 
+    matchId: state.matchId, 
+    round: state.round, 
+    ruleset: state.ruleset, 
+    proof: state.latestProof,
+    timestamp: new Date().toISOString()
+  };
 }
 
 function renderHistory() {
@@ -157,16 +200,18 @@ function renderHistory() {
   matchHistoryEl.replaceChildren(
     ...state.history.map((entry) => {
       const item = document.createElement("div");
-      item.className = `history-item ${entry.result.includes("won") && !entry.result.includes("Opponent") ? "history-win" : entry.result.includes("Opponent") ? "history-loss" : "history-tie"}`;
+      const isWin = entry.result.includes("You won");
+      const isLoss = entry.result.includes("Opponent won");
+      item.className = `history-item ${isWin ? "history-win" : isLoss ? "history-loss" : "history-tie"}`;
       item.innerHTML = `
         <div class="history-item-header">
           <strong>Round ${entry.round} • ${entry.result}</strong>
-          <code>${shortHash(entry.proofHash)}</code>
+          <code title="${entry.proofHash}">${shortHash(entry.proofHash)}</code>
         </div>
         <div class="history-item-details">
-          <span>You: <b>${entry.playerCard}</b></span>
-          <span>VS</span>
-          <span>Opponent: <b>${entry.opponentCard}</b></span>
+          <span>You: <b style="color: #fff;">${entry.playerCard}</b></span>
+          <span style="color: var(--text-muted);">vs</span>
+          <span>Opp: <b style="color: #fff;">${entry.opponentCard}</b></span>
         </div>
       `;
       return item;
@@ -179,12 +224,19 @@ function prepareNextRound() {
   const availableOpponentCards = state.opponentHand.filter((card) => !state.usedOpponentCards.has(card.id));
 
   if (availablePlayerCards.length === 0 || availableOpponentCards.length === 0) {
-    matchStatusEl.textContent = "Match complete";
+    const finalMsg = state.playerScore > state.opponentScore 
+      ? "🏆 You Won the Match!" 
+      : state.playerScore < state.opponentScore 
+      ? "🤖 Opponent Won the Match!" 
+      : "🤝 Match Ended in a Draw!";
+    matchStatusEl.textContent = finalMsg;
     playedCardEl.className = "played-card empty";
-    playedCardEl.innerHTML = `<span class="placeholder-icon">🏆</span><span>Match Complete</span>`;
+    playedCardEl.innerHTML = `<span class="placeholder-icon">🏆</span><span>Match Complete</span><small>${state.playerScore} - ${state.opponentScore}</small>`;
     opponentCardEl.className = "played-card hidden-card";
     opponentCardEl.innerHTML = `<div class="card-back-pattern"></div><span>Done</span>`;
     invalidProofBtn.disabled = true;
+    verifyBtn.disabled = true;
+    revealBtn.disabled = true;
     return;
   }
 
@@ -195,23 +247,24 @@ function prepareNextRound() {
   roundTextEl.textContent = `Round ${state.round}`;
   
   playedCardEl.className = "played-card empty";
-  playedCardEl.innerHTML = `<span class="placeholder-icon">🂠</span><span>Select Card</span>`;
+  playedCardEl.innerHTML = `<span class="placeholder-icon">+</span><span>Select Card</span><small>Choose from hand</small>`;
   
   opponentCardEl.className = "played-card hidden-card";
-  opponentCardEl.innerHTML = `<div class="card-back-pattern"></div><span>Hidden</span>`;
+  opponentCardEl.innerHTML = `<div class="card-back-pattern"></div><span style="font-size: 0.8rem; font-weight: 700;">Hidden Hand</span><small style="color: var(--text-muted); font-size: 0.68rem;">Revealed after proof</small>`;
   
   proofReceiptEl.className = "receipt empty-receipt";
-  proofReceiptEl.innerHTML = `<div class="receipt-placeholder"><span>Round ${state.round} ready. Select an unused card.</span></div>`;
-  matchStatusEl.textContent = `Round ${state.round} ready`;
+  proofReceiptEl.innerHTML = `<div>Round ${state.round} ready. Select a secret card from your hand.</div>`;
+  matchStatusEl.textContent = `Round ${state.round} Ready`;
   verifyBtn.disabled = true;
   revealBtn.disabled = true;
   invalidProofBtn.disabled = false;
+  updateFlowStep("select");
   renderHand();
 }
 
 function resolveRound() {
   if (!state.replayGuard.claim(state.matchId, state.round)) {
-    matchStatusEl.textContent = "Replay rejected";
+    matchStatusEl.textContent = "Replay Attack Prevented";
     revealBtn.disabled = true;
     return;
   }
@@ -224,12 +277,12 @@ function resolveRound() {
   const oppRed = isRedSuit(state.opponentCard.suit);
   opponentCardEl.className = `played-card ${oppRed ? "suit-red" : "suit-black"} revealed-card`;
   opponentCardEl.innerHTML = `
-    <div class="card-header">
+    <div class="card-header" style="width: 100%;">
       <span class="card-rank">${state.opponentCard.rank}</span>
       <span class="card-suit-mini">${oppSymbol}</span>
     </div>
-    <div class="card-center-suit">${oppSymbol}</div>
-    <div class="card-footer">
+    <div class="card-center-suit" style="font-size: 2.2rem;">${oppSymbol}</div>
+    <div class="card-footer" style="width: 100%;">
       <span class="power-badge">⚡ ${state.opponentCard.power}</span>
     </div>
   `;
@@ -255,13 +308,13 @@ function resolveRound() {
 
   scoreTextEl.textContent = `${state.playerScore} - ${state.opponentScore}`;
   matchStatusEl.textContent =
-    playerPower === opponentPower ? "Round tied" : playerPower > opponentPower ? "You won the round! 🎉" : "Opponent won the round 🤖";
+    playerPower === opponentPower ? "Round Tied ⚖️" : playerPower > opponentPower ? "Round Won! 🎉" : "Opponent Won Round 🤖";
 
   revealBtn.disabled = true;
   verifyBtn.disabled = true;
   invalidProofBtn.disabled = true;
   renderHistory();
-  setTimeout(prepareNextRound, 1400);
+  setTimeout(prepareNextRound, 1500);
 }
 
 async function startMatch() {
@@ -291,27 +344,28 @@ async function startMatch() {
     replayGuard: FairProof.createReplayGuard()
   };
 
-  opponentCommitmentEl.textContent = shortHash(opponent.commitment);
+  opponentCommitmentEl.textContent = opponent.commitment;
   playerCommitmentEl.textContent = shortHash(player.commitment);
   sideOpponentCommitmentEl.textContent = shortHash(opponent.commitment);
   roundTextEl.textContent = "Round 1";
   
   playedCardEl.className = "played-card empty";
-  playedCardEl.innerHTML = `<span class="placeholder-icon">🂠</span><span>Select Card</span>`;
+  playedCardEl.innerHTML = `<span class="placeholder-icon">+</span><span>Select Card</span><small>Choose from hand</small>`;
   
   opponentCardEl.className = "played-card hidden-card";
-  opponentCardEl.innerHTML = `<div class="card-back-pattern"></div><span>Hidden</span>`;
+  opponentCardEl.innerHTML = `<div class="card-back-pattern"></div><span style="font-size: 0.8rem; font-weight: 700;">Hidden Hand</span><small style="color: var(--text-muted); font-size: 0.68rem;">Revealed after proof</small>`;
   
   proofReceiptEl.className = "receipt empty-receipt";
-  proofReceiptEl.innerHTML = `<div class="receipt-placeholder"><span>Hand committed: <code>${shortHash(player.commitment)}</code></span></div>`;
+  proofReceiptEl.innerHTML = `<div>Salted hand committed: <code>${shortHash(player.commitment)}</code></div>`;
   
   copyReceiptBtn.disabled = true;
   downloadReceiptBtn.disabled = true;
   scoreTextEl.textContent = "0 - 0";
-  matchStatusEl.textContent = "Private hand committed";
+  matchStatusEl.textContent = "Salted Commitment Bound";
   verifyBtn.disabled = true;
   revealBtn.disabled = true;
   invalidProofBtn.disabled = false;
+  updateFlowStep("select");
   renderHand();
   renderHistory();
 }
@@ -319,10 +373,10 @@ async function startMatch() {
 verifyBtn.addEventListener("click", async () => {
   verifyBtn.disabled = true;
   const originalText = verifyBtn.innerHTML;
-  verifyBtn.innerHTML = `<span class="btn-spinner"></span> Verifying ZK Proof...`;
-  matchStatusEl.textContent = "Verifying private move commitment...";
+  verifyBtn.innerHTML = `<span class="btn-spinner"></span> Verifying...`;
+  matchStatusEl.textContent = "Executing ZK Rule Check...";
   
-  await new Promise(r => setTimeout(r, 350));
+  await new Promise(r => setTimeout(r, 250));
   
   const proof = await verifyMoveWithApi({
     ruleset: state.ruleset,
@@ -334,7 +388,7 @@ verifyBtn.addEventListener("click", async () => {
 
   state.latestProof = proof;
   renderProof(proof);
-  matchStatusEl.textContent = proof.valid ? "Proof verified ✓" : "Proof failed ✗";
+  matchStatusEl.textContent = proof.valid ? "Proof Verified ✓" : "Proof Failed ✗";
   revealBtn.disabled = !proof.valid;
   verifyBtn.disabled = false;
   verifyBtn.innerHTML = originalText;
@@ -343,10 +397,10 @@ verifyBtn.addEventListener("click", async () => {
 invalidProofBtn.addEventListener("click", async () => {
   invalidProofBtn.disabled = true;
   const originalText = invalidProofBtn.innerHTML;
-  invalidProofBtn.innerHTML = `<span class="btn-spinner"></span> Forging Invalid Move...`;
+  invalidProofBtn.innerHTML = `<span class="btn-spinner"></span> Simulating Attack...`;
   matchStatusEl.textContent = "Simulating forged move proof...";
   
-  await new Promise(r => setTimeout(r, 350));
+  await new Promise(r => setTimeout(r, 250));
 
   const forgedCard = FairProof.createDeck().find((card) => !state.playerHand.some((ownedCard) => ownedCard.id === card.id));
   const proof = await verifyMoveWithApi({
@@ -364,16 +418,16 @@ invalidProofBtn.addEventListener("click", async () => {
   const red = isRedSuit(forgedCard.suit);
   playedCardEl.className = `played-card invalid-card ${red ? "suit-red" : "suit-black"}`;
   playedCardEl.innerHTML = `
-    <div class="card-header">
+    <div class="card-header" style="width: 100%;">
       <span class="card-rank">${forgedCard.rank}</span>
       <span class="card-suit-mini">${symbol}</span>
     </div>
-    <div class="card-center-suit">${symbol}</div>
-    <div class="card-footer">
-      <span class="power-badge warning-badge">⚠️ Forged</span>
+    <div class="card-center-suit" style="font-size: 2.2rem;">${symbol}</div>
+    <div class="card-footer" style="width: 100%;">
+      <span class="power-badge warning-badge">⚠️ Forged Card</span>
     </div>
   `;
-  matchStatusEl.textContent = "Invalid proof rejected 🛡️";
+  matchStatusEl.textContent = "Forged Move Rejected 🛡️";
   revealBtn.disabled = true;
   invalidProofBtn.disabled = false;
   invalidProofBtn.innerHTML = originalText;
@@ -390,9 +444,9 @@ copyReceiptBtn.addEventListener("click", async () => {
     const origHTML = copyReceiptBtn.innerHTML;
     copyReceiptBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!`;
     setTimeout(() => copyReceiptBtn.innerHTML = origHTML, 1500);
-    matchStatusEl.textContent = "Receipt JSON copied to clipboard";
+    matchStatusEl.textContent = "Receipt Copied";
   } catch {
-    matchStatusEl.textContent = "Copy blocked by browser";
+    matchStatusEl.textContent = "Clipboard access restricted";
   }
 });
 
@@ -402,10 +456,11 @@ downloadReceiptBtn.addEventListener("click", () => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `fairproof-${state.matchId}-round-${state.round}.json`;
+  link.download = `fairproof-receipt-round-${state.round}.json`;
   link.click();
   URL.revokeObjectURL(url);
-  matchStatusEl.textContent = "Receipt downloaded";
+  matchStatusEl.textContent = "Receipt Downloaded";
 });
 
+// Initialize on page load
 startMatch();

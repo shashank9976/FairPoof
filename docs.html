@@ -1,7 +1,168 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>FairProof | Docs</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"><link rel="stylesheet" href="src/styles.css"></head>
-<body><main class="app"><nav class="topbar" aria-label="FairProof navigation"><a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M10 2 17 6v8l-7 4-7-4V6l7-4Z"/><path d="m6.5 10 2.25 2.25L13.75 7.5"/></svg></span>FairProof</a><div class="nav-links"><a href="index.html">Dashboard</a><a href="demo.html">Demo Game</a><a href="sdk.html">SDK</a><a class="active" href="docs.html">Docs</a></div></nav>
-<section class="page-heading"><div><p class="eyebrow">Protocol design</p><h1>Privacy architecture</h1><p class="lede">The game is only the demonstration. The important surface is the boundary between what a verifier needs to know and what players keep private.</p></div></section>
-<section class="docs-grid"><article class="reference-panel"><span class="card-kicker">Disclosure boundary</span><h2>Public vs private</h2><div class="disclosure"><div><dt>Public</dt><dd>Ruleset, commitment hash, selected move, validity result, and proof hash.</dd></div><div><dt>Private</dt><dd>Unplayed cards, salt, opponent hand, and future strategy.</dd></div></div></article><article class="reference-panel"><span class="card-kicker">Midnight preparation</span><h2>Selective disclosure path</h2><div class="api-list"><div><code>Local commitment</code><p>Current browser flow establishes the private-state commitment.</p></div><div><code>Compact circuit</code><p>Move ownership and ruleset checks can become Midnight contract assertions.</p></div><div><code>Public receipt</code><p>Publish only the proof result and selected public fields for auditability.</p></div></div><a class="text-link" href="docs/midnight-mapping.md">Read mapping notes <svg class="lucide-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></article></section>
-<section class="docs-links"><span class="eyebrow">Submission material</span><a href="submission/project-description.md">Project description</a><a href="submission/technical-architecture.md">Technical architecture</a><a href="submission/wave-1-progress.md">Wave 1 progress</a><a href="submission/demo-script.md">Demo script</a></section>
-</main></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FairProof | Privacy Architecture &amp; Midnight Integration</title>
+  <meta name="description" content="Technical architecture of FairProof: Selective disclosure boundaries, zero-knowledge verification flow, and Midnight Network Compact smart contract mapping.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+<main class="app">
+  <!-- Topbar -->
+  <header class="topbar">
+    <a class="brand" href="index.html" aria-label="FairProof Home">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+      </div>
+      <span>FairProof</span>
+      <span class="brand-tag">Docs</span>
+    </a>
+    <nav class="nav-links" aria-label="Main Navigation">
+      <a href="index.html">Overview</a>
+      <a href="demo.html">Live Demo</a>
+      <a href="sdk.html">SDK</a>
+      <a class="active" href="docs.html">Architecture</a>
+    </nav>
+    <div class="nav-actions">
+      <div class="status-badge">
+        <span class="status-dot"></span>
+        <span>Midnight Ready</span>
+      </div>
+      <a class="btn-cta" href="demo.html">
+        <span>Try Demo</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Page Heading -->
+  <section class="page-heading">
+    <div>
+      <span class="eyebrow">Protocol Design</span>
+      <h1>Privacy Architecture</h1>
+      <p class="lede">The card game is only the demonstration. The core foundation is the cryptographic boundary separating public verification from private player state.</p>
+    </div>
+  </section>
+
+  <!-- Docs Grid -->
+  <section class="docs-grid">
+    
+    <!-- Panel 1: Selective Disclosure Boundary -->
+    <article class="reference-panel">
+      <span class="card-kicker">Core Protocol</span>
+      <h2>Selective Disclosure Boundary</h2>
+      <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 16px;">
+        FairProof isolates what verifiers need to confirm fair play from what must remain private to preserve gameplay integrity.
+      </p>
+
+      <div class="privacy-map" style="margin-top: 0; margin-bottom: 16px;">
+        <div>
+          <span class="map-label">Public State</span>
+          <ul>
+            <li>Ruleset ID</li>
+            <li>Commitment SHA-256 Root</li>
+            <li>Played Move</li>
+            <li>Validity Assertion</li>
+            <li>Public Receipt Digest</li>
+          </ul>
+        </div>
+        <div>
+          <span class="map-label">Private State</span>
+          <ul>
+            <li>Unplayed Hand Cards</li>
+            <li>Secret 128-bit Salt</li>
+            <li>Opponent Hand</li>
+            <li>Player Strategy</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <!-- Panel 2: Midnight Network & Compact Mapping -->
+    <article class="reference-panel">
+      <span class="card-kicker">Next-Gen Blockchain</span>
+      <h2>Midnight &amp; Compact Mapping</h2>
+      <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 16px;">
+        How FairProof's browser-level commitments map directly to Midnight's zero-knowledge Compact smart contract primitives:
+      </p>
+
+      <div class="api-list">
+        <div>
+          <code>1. Local Ledger State (Commitment)</code>
+          <p>On-chain ledger stores only <code>player_commitment: Bytes&lt;32&gt;</code> without disclosing private hand elements.</p>
+        </div>
+        <div>
+          <code>2. Compact Witness Circuit (Assertion)</code>
+          <p>The client witness proves private knowledge of hand and salt satisfying the commitment root and move membership.</p>
+        </div>
+        <div>
+          <code>3. Public Transition (Settlement)</code>
+          <p>Upon valid circuit execution, the contract accepts the move, mutates the public match ledger, and issues an immutable receipt.</p>
+        </div>
+      </div>
+    </article>
+
+  </section>
+
+  <!-- Submission Documents Section -->
+  <section style="margin-top: 36px;">
+    <div class="section-head" style="text-align: left; margin-bottom: 20px;">
+      <span class="eyebrow">Project Materials</span>
+      <h2 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700; color: #ffffff;">Submission Documentation</h2>
+    </div>
+
+    <div class="docs-links">
+      <a href="submission/project-description.md" target="_blank">Project Description</a>
+      <a href="submission/technical-architecture.md" target="_blank">Technical Architecture</a>
+      <a href="docs/midnight-mapping.md" target="_blank">Midnight Mapping</a>
+      <a href="submission/wave-1-progress.md" target="_blank">Wave 1 Report</a>
+      <a href="submission/demo-script.md" target="_blank">Demo Script</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-brand">
+      <a class="brand" href="index.html">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        </div>
+        <span>FairProof</span>
+      </a>
+      <p>Zero-knowledge verifiable game state commitments without telemetry or client surveillance.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Platform</h4>
+      <ul>
+        <li><a href="index.html">Overview</a></li>
+        <li><a href="demo.html">Live Battle Demo</a></li>
+        <li><a href="sdk.html">SDK Reference</a></li>
+        <li><a href="docs.html">Architecture</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Documentation</h4>
+      <ul>
+        <li><a href="submission/project-description.md">Project Pitch</a></li>
+        <li><a href="submission/technical-architecture.md">Technical Design</a></li>
+        <li><a href="docs/midnight-mapping.md">Midnight Mapping</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Ecosystem</h4>
+      <ul>
+        <li><a href="https://midnight.network" target="_blank" rel="noopener">Midnight Network</a></li>
+        <li><a href="examples/browser-sdk-example.html">Browser Example</a></li>
+      </ul>
+    </div>
+    <div class="footer-bottom" style="grid-column: 1 / -1;">
+      <span>© 2026 FairProof. MIT License. Built for Midnight Network Hackathon.</span>
+      <span>Local Zero-Knowledge Verification Engine</span>
+    </div>
+  </footer>
+</main>
+</body>
+</html>

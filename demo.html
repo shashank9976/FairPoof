@@ -1,16 +1,240 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>FairProof | Demo Game</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"><link rel="stylesheet" href="src/styles.css"></head>
-<body><main class="app">
-<nav class="topbar" aria-label="FairProof navigation"><a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M10 2 17 6v8l-7 4-7-4V6l7-4Z"/><path d="m6.5 10 2.25 2.25L13.75 7.5"/></svg></span>FairProof</a><div class="nav-links"><a href="index.html">Dashboard</a><a class="active" href="demo.html">Demo Game</a><a href="sdk.html">SDK</a><a href="docs.html">Docs</a></div></nav>
-<section class="page-heading"><div><p class="eyebrow">Live environment / card-battle-v1</p><h1>Card Battle Demo</h1><p class="lede">Select a card, generate a private validity proof, and reveal the result only after verification.</p></div><div class="status-panel"><span class="status-dot"></span><span id="matchStatus">Match ready</span></div></section>
-<section class="workspace" aria-label="FairProof demo workspace">
-<aside class="sdk-panel"><div class="panel-head"><h2>SDK Flow</h2><button id="newMatchBtn" class="icon-button" type="button" title="Start new match" aria-label="Start new match">R</button></div><ol class="flow-list"><li class="active">Commit hidden hand</li><li>Submit selected move</li><li>Verify rule privately</li><li>Publish proof receipt</li></ol><div class="commitment-stack"><h2>Commitments</h2><div><span>Your hand</span><code id="playerCommitment">Waiting...</code></div><div><span>Opponent hand</span><code id="sideOpponentCommitment">Waiting...</code></div></div><div class="code-block"><pre><code>const proof = await FairProof.verifyMove({
-  ruleset: "card-battle-v1",
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FairProof | Card Battle ZK Cockpit</title>
+  <meta name="description" content="Interactive Zero-Knowledge card battle arena demonstrating salted commitments, move proofs, forged move rejection, and public receipt generation.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+<main class="app">
+  <!-- Topbar -->
+  <header class="topbar">
+    <a class="brand" href="index.html" aria-label="FairProof Home">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+      </div>
+      <span>FairProof</span>
+      <span class="brand-tag">Demo</span>
+    </a>
+    <nav class="nav-links" aria-label="Main Navigation">
+      <a href="index.html">Overview</a>
+      <a class="active" href="demo.html">Live Demo</a>
+      <a href="sdk.html">SDK</a>
+      <a href="docs.html">Architecture</a>
+    </nav>
+    <div class="nav-actions">
+      <div class="status-badge">
+        <span class="status-dot"></span>
+        <span id="matchStatus">Match Ready</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page Header -->
+  <section class="page-heading">
+    <div>
+      <span class="eyebrow">ruleset: card-battle-v1</span>
+      <h1>Zero-Knowledge Battle Cockpit</h1>
+      <p class="lede">Choose a secret card from your hand, generate a ZK proof locally, and reveal only upon round settlement.</p>
+    </div>
+    <div class="score-hud">
+      <div>
+        <div class="score-hud-label">Score</div>
+        <div class="score-hud-val" id="scoreText">0 - 0</div>
+      </div>
+      <span id="roundText" class="score-hud-round">Round 1</span>
+    </div>
+  </section>
+
+  <!-- 3-Column Workspace (Spacious & Clean) -->
+  <section class="workspace" aria-label="FairProof demo workspace">
+    
+    <!-- Left Column: SDK Flow & State Console -->
+    <aside class="sdk-panel">
+      <div class="panel-head">
+        <h2>SDK Pipeline</h2>
+        <button id="newMatchBtn" class="icon-button" type="button" title="Start New Match" aria-label="Start New Match">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+        </button>
+      </div>
+      
+      <ol class="flow-list" id="flowSteps">
+        <li class="active" id="step-commit">Salted hand commitment</li>
+        <li id="step-select">Select private card</li>
+        <li id="step-verify">Cryptographic rule check</li>
+        <li id="step-receipt">Public proof receipt</li>
+      </ol>
+
+      <div class="commitment-stack">
+        <h3>Public Commitments</h3>
+        <div>
+          <span>Your Hand (SHA-256)</span>
+          <code id="playerCommitment">Waiting...</code>
+        </div>
+        <div>
+          <span>Opponent Hand (SHA-256)</span>
+          <code id="sideOpponentCommitment">Waiting...</code>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <pre><code><span class="tok-keyword">const</span> proof = <span class="tok-keyword">await</span> FairProof.<span class="tok-fn">verifyMove</span>({
+  ruleset: <span class="tok-string">"card-battle-v1"</span>,
   privateHand,
+  salt,
   commitment,
-  move
-});</code></pre></div></aside>
-<section class="game-board"><div class="board-header"><div><p class="eyebrow">Private match</p><h2>Play a verified move</h2><p>The proof confirms the selected card belongs to your committed hand.</p></div><div class="score"><span>Score</span><strong id="scoreText">0 - 0</strong></div></div><div class="arena"><div class="player-zone"><div class="zone-label">Your Private Hand</div><div id="hand" class="hand" aria-label="Player hand"></div></div><div class="versus"><button id="playedCard" class="played-card empty" type="button"><span class="placeholder-icon" aria-hidden="true">+</span><span>Select card</span><small>Choose from your hand</small></button><div class="vs-line"></div><div id="opponentCard" class="played-card hidden-card"><span class="card-back-pattern" aria-hidden="true"></span><span class="hidden-card-label">Hidden hand</span><small>Revealed after proof</small></div></div><div class="player-zone opponent"><div class="zone-label">Opponent Commitment</div><div class="commitment" id="opponentCommitment"></div></div></div><div class="actions"><button id="verifyBtn" class="primary-button" type="button" disabled>Generate Proof</button><button id="invalidProofBtn" class="danger-button" type="button">Invalid Proof Example</button><button id="revealBtn" class="secondary-button" type="button" disabled>Resolve Round</button></div><div class="history-section"><div class="panel-head"><h2>Match History</h2><span id="roundText" class="round-pill">Round 1</span></div><div id="matchHistory" class="history-list">No rounds resolved yet.</div></div></section>
-<aside class="proof-panel"><h2>Public Proof Receipt</h2><div id="proofReceipt" class="receipt empty-receipt">No proof generated yet.</div><h2>Public vs Private</h2><div class="privacy-map"><div><span class="map-label public-label">Public</span><ul><li>Ruleset</li><li>Commitment hash</li><li>Played card</li><li>Validity result</li></ul></div><div><span class="map-label private-label">Private</span><ul><li>Unplayed cards</li><li>Salt</li><li>Opponent hand</li><li>Future strategy</li></ul></div></div></aside>
-</section></main><script src="src/sdk/fairproof.js"></script><script src="src/app.js"></script></body></html>
+  move: { card }
+});</code></pre>
+      </div>
+    </aside>
+
+    <!-- Center Column: Card Battle Arena -->
+    <section class="game-board">
+      <div class="board-header">
+        <div>
+          <h2>Battle Arena</h2>
+          <p>Cards remain hidden from opponent until deterministic proof verification completes.</p>
+        </div>
+      </div>
+
+      <div class="arena">
+        <!-- Player Hand Zone -->
+        <div class="player-zone">
+          <div class="zone-label">Your Private Hand (Select One)</div>
+          <div id="hand" class="hand" aria-label="Player hand"></div>
+        </div>
+
+        <!-- Clash / Battle Arena Zone -->
+        <div class="versus">
+          <button id="playedCard" class="played-card empty" type="button" aria-label="Selected Card Slot">
+            <span class="placeholder-icon" aria-hidden="true">+</span>
+            <span>Select Card</span>
+            <small>From hand</small>
+          </button>
+          
+          <div class="vs-line">VS</div>
+          
+          <div id="opponentCard" class="played-card hidden-card" aria-label="Opponent Hidden Card Slot">
+            <div class="card-back-pattern" aria-hidden="true"></div>
+            <span style="font-size: 0.76rem; font-weight: 600;">Hidden Hand</span>
+            <small style="color: var(--text-dim); font-size: 0.65rem;">Revealed post-proof</small>
+          </div>
+        </div>
+
+        <!-- Opponent Commitment Info -->
+        <div class="player-zone">
+          <div class="zone-label">Opponent Commitment Hash</div>
+          <div class="commitment-stack" style="margin-bottom: 0;">
+            <code id="opponentCommitment">Waiting for match...</code>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="actions">
+        <button id="verifyBtn" class="primary-button" type="button" disabled>
+          <span>Generate Proof</span>
+        </button>
+        <button id="invalidProofBtn" class="danger-button" type="button">
+          <span>Test Forged Move</span>
+        </button>
+        <button id="revealBtn" class="secondary-button" type="button" disabled>
+          <span>Resolve Round</span>
+        </button>
+      </div>
+
+      <!-- Match History Timeline -->
+      <div class="history-section">
+        <div class="panel-head" style="margin-bottom: 10px; padding-bottom: 6px;">
+          <h2>Round History</h2>
+        </div>
+        <div id="matchHistory" class="history-list empty-history">
+          No rounds resolved yet.
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Proof Inspector & Privacy Disclosure -->
+    <aside class="proof-panel">
+      <h2>Public Proof Receipt</h2>
+      <div id="proofReceipt" class="receipt empty-receipt">
+        No proof generated yet. Select a card and generate a proof.
+      </div>
+
+      <h2 style="margin-top: 20px;">Disclosure Boundary</h2>
+      <div class="privacy-map">
+        <div>
+          <span class="map-label">Public State</span>
+          <ul>
+            <li>Ruleset ID</li>
+            <li>Commitment Root</li>
+            <li>Played Card</li>
+            <li>Validity Result</li>
+            <li>Proof SHA-256</li>
+          </ul>
+        </div>
+        <div>
+          <span class="map-label">Private State</span>
+          <ul>
+            <li>4 Unplayed Cards</li>
+            <li>Local Salt / Nonce</li>
+            <li>Opponent Cards</li>
+            <li>Player Strategy</li>
+          </ul>
+        </div>
+      </div>
+    </aside>
+
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-brand">
+      <a class="brand" href="index.html">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        </div>
+        <span>FairProof</span>
+      </a>
+      <p>Zero-knowledge verifiable game state commitments without telemetry or client surveillance.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Platform</h4>
+      <ul>
+        <li><a href="index.html">Overview</a></li>
+        <li><a href="demo.html">Live Battle Demo</a></li>
+        <li><a href="sdk.html">SDK Reference</a></li>
+        <li><a href="docs.html">Architecture</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Documentation</h4>
+      <ul>
+        <li><a href="submission/project-description.md">Project Pitch</a></li>
+        <li><a href="submission/technical-architecture.md">Technical Design</a></li>
+        <li><a href="docs/midnight-mapping.md">Midnight Mapping</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Ecosystem</h4>
+      <ul>
+        <li><a href="https://midnight.network" target="_blank" rel="noopener">Midnight Network</a></li>
+        <li><a href="examples/browser-sdk-example.html">Browser Example</a></li>
+      </ul>
+    </div>
+    <div class="footer-bottom" style="grid-column: 1 / -1;">
+      <span>© 2026 FairProof. MIT License. Built for Midnight Network Hackathon.</span>
+      <span>Local Zero-Knowledge Verification Engine</span>
+    </div>
+  </footer>
+</main>
+
+<script src="src/sdk/fairproof.js"></script>
+<script src="src/app.js"></script>
+</body>
+</html>
